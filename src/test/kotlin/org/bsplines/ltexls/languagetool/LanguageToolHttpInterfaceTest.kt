@@ -71,6 +71,22 @@ class LanguageToolHttpInterfaceTest {
   }
 
   @Test
+  fun testLeadingMarkupPreservesOffsets() {
+    val code = "@section:introduction contains a mispeling.\n"
+    val settingsManager = SettingsManager(this.defaultSettings)
+    val documentChecker = DocumentChecker(settingsManager)
+    val document = DocumentCheckerTest.createDocument("typst", code)
+    val matches: List<LanguageToolRuleMatch> = documentChecker.check(document).first
+    val misspelling =
+      matches.first { match: LanguageToolRuleMatch ->
+        match.isUnknownWordRule() && code.substring(match.fromPos, match.toPos) == "mispeling"
+      }
+
+    assertEquals(code.indexOf("mispeling"), misspelling.fromPos)
+    assertEquals(code.indexOf("mispeling") + "mispeling".length, misspelling.toPos)
+  }
+
+  @Test
   fun testOtherMethods() {
     val settingsManager = SettingsManager(this.defaultSettings)
     val ltInterface: LanguageToolInterface? = settingsManager.languageToolInterface

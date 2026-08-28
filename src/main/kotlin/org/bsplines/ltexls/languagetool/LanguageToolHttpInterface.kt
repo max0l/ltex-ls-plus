@@ -129,10 +129,15 @@ class LanguageToolHttpInterface(
     val jsonMatches: JsonArray = jsonResponse.get("matches").asJsonArray
     val result = ArrayList<LanguageToolRuleMatch>()
 
+    // The request carries a synthetic leading text part to keep LanguageTool's
+    // context window from underflowing when a paragraph begins with markup.
+    // Drop matches in that padding and translate all real offsets back.
     for (jsonElement: JsonElement in jsonMatches) {
-      result.add(
-        LanguageToolRuleMatch.fromLanguageTool(jsonElement.asJsonObject, annotatedTextFragment),
-      )
+      val jsonMatch: JsonObject = jsonElement.asJsonObject
+      val offset: Int = jsonMatch.get("offset").asInt
+      if (offset < LEADING_CONTEXT_PADDING.length) continue
+      jsonMatch.addProperty("offset", offset - LEADING_CONTEXT_PADDING.length)
+      result.add(LanguageToolRuleMatch.fromLanguageTool(jsonMatch, annotatedTextFragment))
     }
 
     return result
@@ -208,8 +213,16 @@ class LanguageToolHttpInterface(
   companion object {
     private const val STATUS_CODE_SUCCESS = 200
 
+    // LanguageTool Premium can return HTTP 500 with a negative context index when
+    // a standalone incremental-check paragraph starts with interpreted markup.
+    // Whitespace is language-neutral and eight characters cover its context lookbehind.
+    private const val LEADING_CONTEXT_PADDING = "        "
+
     private fun convertAnnotatedTextToJson(annotatedText: AnnotatedText): JsonElement {
       val jsonDataAnnotation = JsonArray()
+      val contextPart = JsonObject()
+      contextPart.addProperty("text", LEADING_CONTEXT_PADDING)
+      jsonDataAnnotation.add(contextPart)
       val parts: List<TextPart> = annotatedText.parts
       var i = 0
 

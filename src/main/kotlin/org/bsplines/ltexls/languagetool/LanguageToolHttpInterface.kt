@@ -79,25 +79,44 @@ class LanguageToolHttpInterface(
         .header("Accept", "application/json")
         .POST(BodyPublishers.ofString(requestBody))
         .build()
-    val httpResponse: HttpResponse<String> =
+    var httpResponse: HttpResponse<String>? = null
+    var lastException: IOException? = null
+    for (attempt: Int in 0..HTTP_RETRY_DELAYS_MILLISECONDS.size) {
       try {
-        this.httpClient.send(httpRequest, BodyHandlers.ofString())
+        httpResponse = this.httpClient.send(httpRequest, BodyHandlers.ofString())
+        if (httpResponse.statusCode() < 500) break
       } catch (e: InterruptedException) {
-        Logging.LOGGER.severe(I18n.format("couldNotSendHttpRequestToLanguageTool", e))
-        return emptyList()
+        Thread.currentThread().interrupt()
+        throw LanguageToolHttpException(I18n.format("couldNotSendHttpRequestToLanguageTool", e), e)
       } catch (e: IOException) {
-        Logging.LOGGER.severe(I18n.format("couldNotSendHttpRequestToLanguageTool", e))
-        return emptyList()
+        lastException = e
       }
 
-    val statusCode: Int = httpResponse.statusCode()
-
-    if (statusCode != STATUS_CODE_SUCCESS) {
-      Logging.LOGGER.severe(I18n.format("languageToolFailedWithStatusCode", statusCode))
-      return emptyList()
+      if (attempt < HTTP_RETRY_DELAYS_MILLISECONDS.size) {
+        try {
+          Thread.sleep(HTTP_RETRY_DELAYS_MILLISECONDS[attempt])
+        } catch (e: InterruptedException) {
+          Thread.currentThread().interrupt()
+          throw LanguageToolHttpException(I18n.format("couldNotSendHttpRequestToLanguageTool", e), e)
+        }
+      }
     }
 
-    val responseBody: String = httpResponse.body()
+    val response: HttpResponse<String> =
+      httpResponse ?: throw LanguageToolHttpException(
+        I18n.format("couldNotSendHttpRequestToLanguageTool", lastException),
+        lastException,
+      )
+    val statusCode: Int = response.statusCode()
+    if (statusCode != STATUS_CODE_SUCCESS) {
+      val responseExcerpt: String = response.body().take(MAX_ERROR_RESPONSE_LOG_LENGTH)
+      Logging.LOGGER.severe(
+        I18n.format("languageToolFailedWithStatusCode", statusCode) + ": " + responseExcerpt,
+      )
+      throw LanguageToolHttpException("LanguageTool HTTP $statusCode: $responseExcerpt")
+    }
+
+    val responseBody: String = response.body()
     val jsonResponse: JsonObject = JsonParser.parseString(responseBody).asJsonObject
 
     // When language=auto, the server reports the language it picked as
@@ -210,8 +229,15 @@ class LanguageToolHttpInterface(
     // not possible with LanguageTool HTTP server
   }
 
+  private class LanguageToolHttpException(
+    message: String,
+    cause: Throwable? = null,
+  ) : RuntimeException(message, cause)
+
   companion object {
     private const val STATUS_CODE_SUCCESS = 200
+    private const val MAX_ERROR_RESPONSE_LOG_LENGTH = 500
+    private val HTTP_RETRY_DELAYS_MILLISECONDS = longArrayOf(250L, 750L)
 
     // LanguageTool Premium can return HTTP 500 with a negative context index when
     // a standalone incremental-check paragraph starts with interpreted markup.

@@ -60,8 +60,16 @@ abstract class LanguageToolInterface {
   ): Boolean {
     val fragmentLanguage: String = annotatedTextFragment.codeFragment.languageShortCode
     val disabledRules: Set<String> = this.allDisabledRules[fragmentLanguage] ?: emptySet()
-    return !disabledRules.contains(match.ruleId) &&
-      !isCoveredByDictionary(annotatedTextFragment, match, fragmentLanguage)
+    if (disabledRules.contains(match.ruleId)) return false
+    if (isCoveredByDictionary(annotatedTextFragment, match, fragmentLanguage)) return false
+    if (annotatedTextFragment.isRangeEntirelyMarkup(match.fromPos, match.toPos)) return false
+    if (
+      annotatedTextFragment.doesRangeIntersectMarkup(match.fromPos, match.toPos) &&
+      match.suggestedReplacements.any { GENERATED_DUMMY_REGEX.containsMatchIn(it) }
+    ) {
+      return false
+    }
+    return true
   }
 
   // Suppress a match whose span is nothing but an accepted word.
@@ -98,6 +106,10 @@ abstract class LanguageToolInterface {
 
     return ((matcher != null) && matcher.isEntry(word)) ||
       annotatedTextFragment.isAdditionalDictionaryEntry(word)
+  }
+
+  companion object {
+    private val GENERATED_DUMMY_REGEX = Regex("\\bDummy\\d+\\b")
   }
 
   abstract fun isInitialized(): Boolean

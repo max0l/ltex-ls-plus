@@ -89,11 +89,11 @@ class TypstModeHandler(
       if (typstTextBuilder.codeMode.stringCounter > 0 &&
         typstTextBuilder.codeMode.squareBracketscounter == 0
       ) {
-        // No leading whitespace if 1st char is a dot
+        // No leading separator if the content starts with a dot.
         typstTextBuilder.addMarkup(DOT_REGEX)
-        addCurStringAsMarkupWithSpace()
+        addCurStringAsMarkupWithSeparator()
       } else {
-        // First content block/string of current code mode does not get a leading space
+        // First content block/string of current code mode does not get a separator.
         typstTextBuilder.addMarkup(typstTextBuilder.curString)
       }
       typstTextBuilder.codeMode.stringCounter++
@@ -122,23 +122,24 @@ class TypstModeHandler(
     if (typstTextBuilder.codeMode.codeModeString &&
       typstTextBuilder.codeMode.stringCounter > 0
     ) {
-      // No leading whitespace if 1st char is a dot
+      // No leading separator if the content starts with a dot.
       typstTextBuilder.addMarkup(DOT_REGEX)
-      addCurStringAsMarkupWithSpace()
+      addCurStringAsMarkupWithSeparator()
     } else {
-      // First content block/string of current code mode does not get a leading space
+      // First content block/string of current code mode does not get a separator.
       typstTextBuilder.addMarkup(typstTextBuilder.curString)
     }
     typstTextBuilder.codeMode.stringCounter++
   }
 
-  private fun addCurStringAsMarkupWithSpace() {
+  private fun addCurStringAsMarkupWithSeparator() {
     if (!typstTextBuilder.characterProcessed) {
-      typstTextBuilder.addMarkup(typstTextBuilder.curString, " ")
+      typstTextBuilder.addMarkup(typstTextBuilder.curString, CONTENT_SEPARATOR)
     }
   }
 
   companion object {
+    private const val CONTENT_SEPARATOR = "\n\n"
     private val QUOTATION_MARK_WHITESPACE_REGEX = Regex("^\"\\s*")
     private val WHITESPACE_QUOTATION_MARK_REGEX = Regex("^\\s*(?=\")")
     private val FILENAME_REGEX = Regex("^.+\\.\\w{1,4}")

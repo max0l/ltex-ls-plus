@@ -39,6 +39,7 @@ open class TypstAnnotatedTextBuilder(
     addMarkup(ENUM_REGEX, "\n")
     processFootnote()
     registerAbbreviation()
+    addMarkup(QUOTE_REGEX, "", false, true, BracketType.SquareBracket)
     addMarkup(CODE_REGEX, "", false, true)
     addMarkup(CODE_CURLY_BRACKETS_REGEX, "", false, true, BracketType.CurlyBracket)
     addMarkup(SQUARE_BRACKETS_REGEX_MID, "\n")
@@ -106,6 +107,10 @@ open class TypstAnnotatedTextBuilder(
     val citationContext =
       !reference.contains(':') &&
         (nextPos >= this.code.length || this.code[nextPos] in CITATION_FOLLOWING_CHARACTERS)
+    val referencePlaceholder: String? =
+      REFERENCE_PLACEHOLDERS[label]?.let { placeholder: String ->
+        if (isStartOfSentence()) placeholder.replaceFirstChar { it.titlecaseChar() } else placeholder
+      }
     val interpretAs =
       when {
         label in abbreviationLabels -> {
@@ -113,6 +118,10 @@ open class TypstAnnotatedTextBuilder(
             label,
             reference.substringAfter(':', "") in PLURAL_ABBREVIATION_SPECIFIERS,
           )
+        }
+
+        referencePlaceholder != null -> {
+          referencePlaceholder
         }
 
         citationContext -> {
@@ -184,6 +193,7 @@ open class TypstAnnotatedTextBuilder(
     private val FOOTNOTE_REGEX = Regex("^#footnote\\[[\\s\\S]*?\\]")
     private val FOOTNOTE_WITH_TRAILING_WHITESPACE_REGEX =
       Regex("^#footnote\\[[\\s\\S]*?\\][\\t ]+")
+    private val QUOTE_REGEX = Regex("^[\\t ]*#quote(?:\\([^\\r\\n]*\\))?\\[")
     private val CODE_REGEX = Regex("^#.*?\\(")
     private val CODE_CURLY_BRACKETS_REGEX = Regex("^#\\{")
     private val SQUARE_BRACKETS_REGEX_MID = Regex("^\\]\\[")
@@ -212,6 +222,17 @@ open class TypstAnnotatedTextBuilder(
     private val TRAILING_LABEL_REGEX = Regex("^[\\t ]*<[^\\s>]+>(?=\r?\n|$)")
     private val CONDITIONAL_HYPHEN_REGEX = Regex("^-\\?")
     private val PLURAL_ABBREVIATION_SPECIFIERS = setOf("pls", "pll", "pllo", "pla")
+    private val REFERENCE_PLACEHOLDERS =
+      mapOf(
+        "appendix" to "appendix",
+        "byte" to "figure",
+        "code" to "listing",
+        "eq" to "equation",
+        "fig" to "figure",
+        "lst" to "listing",
+        "sec" to "section",
+        "tab" to "table",
+      )
     private const val CITATION_PLACEHOLDER = "(citation)"
     private val CITATION_FOLLOWING_CHARACTERS =
       charArrayOf('.', ',', ';', ':', '!', '?', ')', ']', '@')

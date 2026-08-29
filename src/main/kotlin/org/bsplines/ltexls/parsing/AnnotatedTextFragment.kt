@@ -79,6 +79,47 @@ class AnnotatedTextFragment(
     }
   }
 
+  fun isRangeEntirelyMarkup(
+    fromPos: Int,
+    toPos: Int,
+  ): Boolean {
+    var sourcePos = 0
+    var intersectsMarkup = false
+
+    for (part: TextPart in this.annotatedText.parts) {
+      if (part.type == TextPart.Type.FAKE_CONTENT) continue
+      val partEnd: Int = sourcePos + part.part.length
+      val intersects = (fromPos < partEnd) && (toPos > sourcePos)
+      if (intersects) {
+        if (part.type == TextPart.Type.TEXT) return false
+        if (part.type == TextPart.Type.MARKUP) intersectsMarkup = true
+      }
+      sourcePos = partEnd
+    }
+
+    return intersectsMarkup
+  }
+
+  fun doesRangeIntersectMarkup(
+    fromPos: Int,
+    toPos: Int,
+  ): Boolean {
+    var sourcePos = 0
+    for (part: TextPart in this.annotatedText.parts) {
+      if (part.type == TextPart.Type.FAKE_CONTENT) continue
+      val partEnd: Int = sourcePos + part.part.length
+      if (
+        (part.type == TextPart.Type.MARKUP) &&
+        (fromPos < partEnd) &&
+        (toPos > sourcePos)
+      ) {
+        return true
+      }
+      sourcePos = partEnd
+    }
+    return false
+  }
+
   companion object {
     private val ANNOTATED_TEXT_MAPPING_FIELD: Field =
       run {

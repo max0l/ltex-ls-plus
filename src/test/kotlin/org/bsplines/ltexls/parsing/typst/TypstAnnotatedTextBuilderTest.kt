@@ -396,14 +396,14 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
       The claim #footnote[an explanatory note] @source-four. Next sentence.
       The observation motivated further research @study-2024.
       Multiple sources support this @first-source @second-source.
-      Open @section:three for details.
+      Open @section:three and @fig:overview for details.
       """.trimIndent(),
       """
       See (citation), (citation); and (citation).
       The claim (citation). Next sentence.
       The observation motivated further research (citation).
       Multiple sources support this (citation) (citation).
-      Open Dummy0 for details.
+      Open section and figure for details.
       """.trimIndent(),
     )
   }
@@ -438,6 +438,20 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
       """
       API application programming interface
       API-based clients use element.
+      """.trimIndent(),
+    )
+  }
+
+  @Test
+  fun testQuotes() {
+    assertPlainText(
+      """
+      Text before #quote[Quoted typo sentnce.] text after.
+      Text #quote(attribution: [@source])[Another typo.] done.
+      """.trimIndent(),
+      """
+      Text before text after.
+      Text done.
       """.trimIndent(),
     )
   }

@@ -63,9 +63,12 @@ abstract class LanguageToolInterface {
     if (disabledRules.contains(match.ruleId)) return false
     if (isCoveredByDictionary(annotatedTextFragment, match, fragmentLanguage)) return false
     if (annotatedTextFragment.isRangeEntirelyMarkup(match.fromPos, match.toPos)) return false
+    val containsGeneratedDummy: Boolean =
+      GENERATED_DUMMY_REGEX.containsMatchIn(match.message) ||
+        match.suggestedReplacements.any { GENERATED_DUMMY_REGEX.containsMatchIn(it) }
     if (
       annotatedTextFragment.doesRangeIntersectMarkup(match.fromPos, match.toPos) &&
-      match.suggestedReplacements.any { GENERATED_DUMMY_REGEX.containsMatchIn(it) }
+      containsGeneratedDummy
     ) {
       return false
     }
@@ -109,7 +112,7 @@ abstract class LanguageToolInterface {
   }
 
   companion object {
-    private val GENERATED_DUMMY_REGEX = Regex("\\bDummy\\d+\\b")
+    private val GENERATED_DUMMY_REGEX = Regex("\\b(?:Dummy|Dummies)\\d+\\b")
   }
 
   abstract fun isInitialized(): Boolean

@@ -47,6 +47,7 @@ abstract class CodeAnnotatedTextBuilder(
   protected var language: String = "en-US"
   protected var dummyGenerator: DummyGenerator = DummyGenerator.getInstance()
   protected var dummyCounter = 0
+  protected var parserSettings: Settings = Settings()
 
   // Entries from settings plus format-specific entries discovered while parsing.
   // The masker is created in build(), after subclasses have seen the whole document.
@@ -83,6 +84,7 @@ abstract class CodeAnnotatedTextBuilder(
   }
 
   open fun setSettings(settings: Settings) {
+    this.parserSettings = settings
     this.language = settings.languageShortCode
     // Normally mask only the current language's dictionary. Under
     // ltex.language="auto" the language is resolved later (server-side on the

@@ -250,6 +250,11 @@ class SettingsTest {
     assertEquals(false, settings.clearDiagnosticsWhenClosingFile)
     settings2 = compareSettings(settings, settings2, false)
 
+    assertFalse(Settings().typstCheckQuotes)
+    settings = settings.copy(_typstCheckQuotes = true)
+    assertTrue(settings.typstCheckQuotes)
+    settings2 = compareSettings(settings, settings2, false)
+
     assertEquals(30L, Settings().paragraphCacheTtlMinutes)
     settings = settings.copy(_paragraphCacheTtlMinutes = 1234L)
     assertEquals(1234L, settings.paragraphCacheTtlMinutes)
@@ -591,6 +596,10 @@ class SettingsTest {
     jsonSettings.addProperty("checkFrequency", "manual")
     settings = Settings.fromJson(jsonSettings, jsonWorkspaceSpecificSettings)
     assertEquals(Settings.CheckFrequency.Manual, settings.checkFrequency)
+
+    jsonSettings.addProperty("typst.checkQuotes", true)
+    settings = Settings.fromJson(jsonSettings, jsonWorkspaceSpecificSettings)
+    assertTrue(settings.typstCheckQuotes)
 
     val preferredVariantsArray = JsonArray()
     preferredVariantsArray.add("en-gb")

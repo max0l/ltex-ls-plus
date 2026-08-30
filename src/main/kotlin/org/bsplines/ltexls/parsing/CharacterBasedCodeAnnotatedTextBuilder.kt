@@ -234,5 +234,6 @@ abstract class CharacterBasedCodeAnnotatedTextBuilder(
   ) {
     RoundBracket("(", ")"),
     CurlyBracket("{", "}"),
+    SquareBracket("[", "]"),
   }
 }

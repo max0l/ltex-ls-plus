@@ -254,7 +254,7 @@ class DocumentCheckerTest {
     val checkingResult = checkDocument(document)
 
     val matches: List<LanguageToolRuleMatch> = checkingResult.first
-    assertEquals(matches.size, 22)
+    assertEquals(matches.size, 21)
 
     assertMatchIs(matches[0], "EN_A_VS_AN", "This is an test with a mistake.", 656, 658)
     assertMatchIs(matches[1], "EN_A_VS_AN", "This is an test with a mistake.", 782, 784)
@@ -283,19 +283,18 @@ class DocumentCheckerTest {
     assertMatchIs(matches[12], "MORFOLOGIK_RULE_EN_US", "Dcba is not a word.", 1758, 1762)
     assertMatchIs(matches[13], "EN_A_VS_AN", "This is an test with a mistake.", 1833, 1835)
     assertMatchIs(matches[14], "EN_A_VS_AN", "This is an test with a mistake.", 1950, 1952)
-    assertMatchIs(matches[15], "AGREEMENT_SENT_START", "This Dummies has a mistake.", 2322, 2335)
-    assertMatchIs(matches[16], "EN_A_VS_AN", "This is an test with a mistake.", 2517, 2519)
-    assertMatchIs(matches[17], "EN_A_VS_AN", "This is an test with a mistake.", 2628, 2630)
-    assertMatchIs(matches[18], "EN_A_VS_AN", "This is an test with a mistake.", 2760, 2762)
-    assertMatchIs(matches[19], "EN_A_VS_AN", "This is an test with a mistake.", 2991, 2993)
+    assertMatchIs(matches[15], "EN_A_VS_AN", "This is an test with a mistake.", 2517, 2519)
+    assertMatchIs(matches[16], "EN_A_VS_AN", "This is an test with a mistake.", 2628, 2630)
+    assertMatchIs(matches[17], "EN_A_VS_AN", "This is an test with a mistake.", 2760, 2762)
+    assertMatchIs(matches[18], "EN_A_VS_AN", "This is an test with a mistake.", 2991, 2993)
     assertMatchIs(
-      matches[20],
+      matches[19],
       "PASSIVE_VOICE_SIMPLE",
       "The rules have been enabled by the comment.",
       3255,
       3297,
     )
-    assertMatchIs(matches[21], "EN_A_VS_AN", "This is an test with a mistake.", 3935, 3937)
+    assertMatchIs(matches[20], "EN_A_VS_AN", "This is an test with a mistake.", 3935, 3937)
   }
 
   /**

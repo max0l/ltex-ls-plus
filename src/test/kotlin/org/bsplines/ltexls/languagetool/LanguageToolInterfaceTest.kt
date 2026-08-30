@@ -42,6 +42,38 @@ class LanguageToolInterfaceTest {
     assertEquals(listOf(matches[1]), languageTool.check(fragment))
   }
 
+  @Test
+  fun testGeneratedPlaceholderMessageMatchesAreFiltered() {
+    val code = "The \\textbf{object} protects memory."
+    val fragment =
+      AnnotatedTextFragment(
+        AnnotatedTextBuilder()
+          .addText("The ")
+          .addMarkup("\\textbf{object}", "object")
+          .addText(" protects memory.")
+          .build(),
+        CodeFragment("latex", code, 0, Settings()),
+        DocumentCheckerTest.createDocument("latex", code),
+      )
+    val matches =
+      listOf(
+        LanguageToolRuleMatch(
+          "TEST_RULE",
+          "The object protects memory.",
+          4,
+          10,
+          "Use 'object' instead of 'Dummy0'.",
+          listOf("object"),
+          RuleMatch.Type.Hint,
+          "en-US",
+        ),
+        createMatch(14, 22, listOf("stores")),
+      )
+    val languageTool = StubLanguageToolInterface(matches)
+
+    assertEquals(listOf(matches[1]), languageTool.check(fragment))
+  }
+
   private class StubLanguageToolInterface(
     private val matches: List<LanguageToolRuleMatch>,
   ) : LanguageToolInterface() {
@@ -63,16 +95,15 @@ class LanguageToolInterfaceTest {
       fromPos: Int,
       toPos: Int,
       replacements: List<String>,
-    ) =
-      LanguageToolRuleMatch(
-        "TEST_RULE",
-        "See section.",
-        fromPos,
-        toPos,
-        "Test message",
-        replacements,
-        RuleMatch.Type.Hint,
-        "en-US",
-      )
+    ) = LanguageToolRuleMatch(
+      "TEST_RULE",
+      "See section.",
+      fromPos,
+      toPos,
+      "Test message",
+      replacements,
+      RuleMatch.Type.Hint,
+      "en-US",
+    )
   }
 }

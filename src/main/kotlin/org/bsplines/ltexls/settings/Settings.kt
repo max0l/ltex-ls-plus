@@ -48,6 +48,7 @@ data class Settings(
   private val _paragraphCacheEnabled: Boolean? = null,
   private val _paragraphCacheTtlMinutes: Long? = null,
   private val _maxRequestSize: Int? = null,
+  private val _typstCheckQuotes: Boolean? = null,
   // Resolved external setting files: settingName -> language -> first external
   // file path. Populated only when the server owns external files (client opted
   // out); used by the server-side quick-fix commands to know where to write.
@@ -119,6 +120,8 @@ data class Settings(
     get() = (this._paragraphCacheTtlMinutes ?: DEFAULT_PARAGRAPH_CACHE_TTL_MINUTES)
   val maxRequestSize: Int
     get() = (this._maxRequestSize ?: DEFAULT_MAX_REQUEST_SIZE)
+  val typstCheckQuotes: Boolean
+    get() = (this._typstCheckQuotes ?: false)
 
   /**
    * Returns differences between `this` and `other` that call for
@@ -429,6 +432,8 @@ data class Settings(
         getSettingFromJsonAsLong(jsonSettings, "paragraphCacheTtlMinutes")
       val maxRequestSize: Int? =
         getSettingFromJsonAsLong(jsonSettings, "maxRequestSize")?.toInt()
+      val typstCheckQuotes: Boolean? =
+        getSettingFromJsonAsBoolean(jsonSettings, "typst.checkQuotes")
 
       return Settings(
         enabled,
@@ -457,6 +462,7 @@ data class Settings(
         paragraphCacheEnabled,
         paragraphCacheTtlMinutes,
         maxRequestSize,
+        typstCheckQuotes,
         externalSettingFiles,
       )
     }

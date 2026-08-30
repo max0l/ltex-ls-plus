@@ -39,7 +39,12 @@ open class TypstAnnotatedTextBuilder(
     addMarkup(ENUM_REGEX, "\n")
     processFootnote()
     registerAbbreviation()
-    addMarkup(QUOTE_REGEX, "", false, true, BracketType.SquareBracket)
+    if (this.parserSettings.typstCheckQuotes) {
+      addMarkup(QUOTE_WITH_ARGUMENTS_REGEX)
+      addMarkup(QUOTE_WITHOUT_ARGUMENTS_REGEX)
+    } else {
+      addMarkup(IGNORED_QUOTE_REGEX, "", false, true, BracketType.SquareBracket)
+    }
     addMarkup(CODE_REGEX, "", false, true)
     addMarkup(CODE_CURLY_BRACKETS_REGEX, "", false, true, BracketType.CurlyBracket)
     addMarkup(SQUARE_BRACKETS_REGEX_MID, "\n")
@@ -109,7 +114,11 @@ open class TypstAnnotatedTextBuilder(
         (nextPos >= this.code.length || this.code[nextPos] in CITATION_FOLLOWING_CHARACTERS)
     val referencePlaceholder: String? =
       REFERENCE_PLACEHOLDERS[label]?.let { placeholder: String ->
-        if (isStartOfSentence()) placeholder.replaceFirstChar { it.titlecaseChar() } else placeholder
+        if (isStartOfSentence()) {
+          placeholder.replaceFirstChar { character: Char -> character.titlecaseChar() }
+        } else {
+          placeholder
+        }
       }
     val interpretAs =
       when {
@@ -193,7 +202,9 @@ open class TypstAnnotatedTextBuilder(
     private val FOOTNOTE_REGEX = Regex("^#footnote\\[[\\s\\S]*?\\]")
     private val FOOTNOTE_WITH_TRAILING_WHITESPACE_REGEX =
       Regex("^#footnote\\[[\\s\\S]*?\\][\\t ]+")
-    private val QUOTE_REGEX = Regex("^[\\t ]*#quote(?:\\([^\\r\\n]*\\))?\\[")
+    private val IGNORED_QUOTE_REGEX = Regex("^[\\t ]*#quote(?:\\([^\\r\\n]*\\))?\\[")
+    private val QUOTE_WITH_ARGUMENTS_REGEX = Regex("^#quote\\([^\\r\\n]*\\)(?=\\[)")
+    private val QUOTE_WITHOUT_ARGUMENTS_REGEX = Regex("^#quote(?=\\[)")
     private val CODE_REGEX = Regex("^#.*?\\(")
     private val CODE_CURLY_BRACKETS_REGEX = Regex("^#\\{")
     private val SQUARE_BRACKETS_REGEX_MID = Regex("^\\]\\[")
@@ -231,6 +242,7 @@ open class TypstAnnotatedTextBuilder(
         "fig" to "figure",
         "lst" to "listing",
         "sec" to "section",
+        "section" to "section",
         "tab" to "table",
       )
     private const val CITATION_PLACEHOLDER = "(citation)"

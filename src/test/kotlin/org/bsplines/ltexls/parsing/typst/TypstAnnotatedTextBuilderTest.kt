@@ -9,6 +9,7 @@
 package org.bsplines.ltexls.parsing.typst
 
 import org.bsplines.ltexls.parsing.CodeAnnotatedTextBuilderTest
+import org.bsplines.ltexls.settings.Settings
 import kotlin.test.Test
 
 class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
@@ -193,7 +194,7 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
       #val is the best.
 
       """.trimIndent(),
-      "\nJoe\nWarning: Dummy0\ndummy text\n[year]\n\nblue-colored red-colored\n\nDummy44 is the best.\n",
+      "\nJoe\nWarning: Dummy0\ndummy text\n[year]\n\nblue-colored\n\nred-colored\n\nDummy44 is the best.\n",
     )
   }
 
@@ -341,7 +342,7 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
       )
       More text after the table.
       """.trimIndent(),
-      "Tables.\nColumn One Column Two \nFirst text.\n \nSecond text.\n\nMore text after the table.",
+      "Tables.\nColumn One\n\nColumn Two\n\n\nFirst text.\n\n\n\nSecond text.\n\nMore text after the table.",
     )
   }
 
@@ -419,8 +420,12 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
       @ABI:pls are interfaces.
       """.trimIndent(),
       """
-      ABI application binary interface
-      MOL method of lines
+      ABI
+
+      application binary interface
+      MOL
+
+      method of lines
       An element protects memory.
       The object is a procedure.
       Elements are interfaces.
@@ -436,7 +441,9 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
       API-based clients use @API:s.
       """.trimIndent(),
       """
-      API application programming interface
+      API
+
+      application programming interface
       API-based clients use element.
       """.trimIndent(),
     )
@@ -444,15 +451,26 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
 
   @Test
   fun testQuotes() {
-    assertPlainText(
+    val code =
       """
       Text before #quote[Quoted typo sentnce.] text after.
       Text #quote(attribution: [@source])[Another typo.] done.
-      """.trimIndent(),
+      """.trimIndent()
+
+    assertPlainText(
+      code,
       """
       Text before text after.
       Text done.
       """.trimIndent(),
+    )
+    assertPlainText(
+      code,
+      """
+      Text before Quoted typo sentnce. text after.
+      Text Another typo. done.
+      """.trimIndent(),
+      Settings(_typstCheckQuotes = true),
     )
   }
 

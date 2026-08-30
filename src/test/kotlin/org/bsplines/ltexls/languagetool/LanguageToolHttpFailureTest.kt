@@ -38,10 +38,11 @@ class LanguageToolHttpFailureTest {
   @Test
   fun testPersistentServerErrorIsNotAnEmptyResult() {
     val requestCount = AtomicInteger()
-    val server = createServer {
-      requestCount.incrementAndGet()
-      true
-    }
+    val server =
+      createServer {
+        requestCount.incrementAndGet()
+        true
+      }
     try {
       val languageTool = LanguageToolHttpInterface(serverUrl(server), "en-US", "")
       assertFailsWith<RuntimeException> { languageTool.check(createFragment()) }
@@ -68,8 +69,7 @@ class LanguageToolHttpFailureTest {
       return server
     }
 
-    private fun serverUrl(server: HttpServer): String =
-      "http://127.0.0.1:${server.address.port}"
+    private fun serverUrl(server: HttpServer): String = "http://127.0.0.1:${server.address.port}"
 
     private fun createFragment(): AnnotatedTextFragment {
       val code = "Text."

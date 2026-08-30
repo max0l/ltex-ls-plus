@@ -79,34 +79,7 @@ class LanguageToolHttpInterface(
         .header("Accept", "application/json")
         .POST(BodyPublishers.ofString(requestBody))
         .build()
-    var httpResponse: HttpResponse<String>? = null
-    var lastException: IOException? = null
-    for (attempt: Int in 0..HTTP_RETRY_DELAYS_MILLISECONDS.size) {
-      try {
-        httpResponse = this.httpClient.send(httpRequest, BodyHandlers.ofString())
-        if (httpResponse.statusCode() < 500) break
-      } catch (e: InterruptedException) {
-        Thread.currentThread().interrupt()
-        throw LanguageToolHttpException(I18n.format("couldNotSendHttpRequestToLanguageTool", e), e)
-      } catch (e: IOException) {
-        lastException = e
-      }
-
-      if (attempt < HTTP_RETRY_DELAYS_MILLISECONDS.size) {
-        try {
-          Thread.sleep(HTTP_RETRY_DELAYS_MILLISECONDS[attempt])
-        } catch (e: InterruptedException) {
-          Thread.currentThread().interrupt()
-          throw LanguageToolHttpException(I18n.format("couldNotSendHttpRequestToLanguageTool", e), e)
-        }
-      }
-    }
-
-    val response: HttpResponse<String> =
-      httpResponse ?: throw LanguageToolHttpException(
-        I18n.format("couldNotSendHttpRequestToLanguageTool", lastException),
-        lastException,
-      )
+    val response: HttpResponse<String> = sendWithRetries(httpRequest)
     val statusCode: Int = response.statusCode()
     if (statusCode != STATUS_CODE_SUCCESS) {
       val responseExcerpt: String = response.body().take(MAX_ERROR_RESPONSE_LOG_LENGTH)
@@ -160,6 +133,40 @@ class LanguageToolHttpInterface(
     }
 
     return result
+  }
+
+  private fun sendWithRetries(httpRequest: HttpRequest): HttpResponse<String> {
+    var httpResponse: HttpResponse<String>? = null
+    var lastException: IOException? = null
+    for (attempt: Int in 0..HTTP_RETRY_DELAYS_MILLISECONDS.size) {
+      try {
+        httpResponse = this.httpClient.send(httpRequest, BodyHandlers.ofString())
+        if (httpResponse.statusCode() < MIN_SERVER_ERROR_STATUS_CODE) break
+      } catch (e: InterruptedException) {
+        Thread.currentThread().interrupt()
+        throw LanguageToolHttpException(I18n.format("couldNotSendHttpRequestToLanguageTool", e), e)
+      } catch (e: IOException) {
+        lastException = e
+      }
+
+      if (attempt < HTTP_RETRY_DELAYS_MILLISECONDS.size) {
+        sleepBeforeRetry(HTTP_RETRY_DELAYS_MILLISECONDS[attempt])
+      }
+    }
+
+    return httpResponse ?: throw LanguageToolHttpException(
+      I18n.format("couldNotSendHttpRequestToLanguageTool", lastException),
+      lastException,
+    )
+  }
+
+  private fun sleepBeforeRetry(delayMilliseconds: Long) {
+    try {
+      Thread.sleep(delayMilliseconds)
+    } catch (e: InterruptedException) {
+      Thread.currentThread().interrupt()
+      throw LanguageToolHttpException(I18n.format("couldNotSendHttpRequestToLanguageTool", e), e)
+    }
   }
 
   private fun createRequestBody(annotatedTextFragment: AnnotatedTextFragment): String? {
@@ -236,6 +243,7 @@ class LanguageToolHttpInterface(
 
   companion object {
     private const val STATUS_CODE_SUCCESS = 200
+    private const val MIN_SERVER_ERROR_STATUS_CODE = 500
     private const val MAX_ERROR_RESPONSE_LOG_LENGTH = 500
     private val HTTP_RETRY_DELAYS_MILLISECONDS = longArrayOf(250L, 750L)
 

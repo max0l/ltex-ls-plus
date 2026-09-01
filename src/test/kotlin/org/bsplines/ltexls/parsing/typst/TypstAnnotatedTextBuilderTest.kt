@@ -475,6 +475,20 @@ class TypstAnnotatedTextBuilderTest : CodeAnnotatedTextBuilderTest("typst") {
   }
 
   @Test
+  fun testIgnoredQuoteDoesNotLeakCodeMode() {
+    assertPlainText(
+      """
+      Before #quote[Attempts isolate "bad" code (e.g., most of "trusted computing").] after.
+      This is inentionally  writtten wrongy.
+      """.trimIndent(),
+      """
+      Before after.
+      This is inentionally  writtten wrongy.
+      """.trimIndent(),
+    )
+  }
+
+  @Test
   fun testLabel() {
     assertPlainText(
       """

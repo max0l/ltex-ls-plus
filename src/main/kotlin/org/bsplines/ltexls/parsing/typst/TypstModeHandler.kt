@@ -7,6 +7,7 @@
  */
 
 package org.bsplines.ltexls.parsing.typst
+import org.bsplines.ltexls.parsing.CharacterBasedCodeAnnotatedTextBuilder.BracketType
 
 class TypstModeHandler(
   private val typstTextBuilder: TypstAnnotatedTextBuilder,
@@ -60,7 +61,9 @@ class TypstModeHandler(
       }
 
       "\"" -> {
-        processQuotationMark()
+        if (typstTextBuilder.codeBlockDelimiter != BracketType.SquareBracket) {
+          processQuotationMark()
+        }
       }
 
       "[" -> {
@@ -142,7 +145,7 @@ class TypstModeHandler(
     private const val CONTENT_SEPARATOR = "\n\n"
     private val QUOTATION_MARK_WHITESPACE_REGEX = Regex("^\"\\s*")
     private val WHITESPACE_QUOTATION_MARK_REGEX = Regex("^\\s*(?=\")")
-    private val FILENAME_REGEX = Regex("^.+\\.\\w{1,4}")
+    private val FILENAME_REGEX = Regex("^[^\"\\r\\n]+\\.\\w{1,4}(?=\")")
     private val DOT_REGEX = Regex("^.(?=\\.)")
     private val PROPERTY_REGEX =
       Regex(

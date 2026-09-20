@@ -276,10 +276,10 @@ class LtexWorkspaceService(
         null
       }
 
-    if (document.beingChecked) document.cancelCheck()
+    this.languageServer.ltexTextDocumentService.cancelActiveChecks()
 
     return CompletableFutures.computeAsync(
-      this.languageServer.singleThreadExecutorService,
+      this.languageServer.interactiveExecutor,
     ) { lspCancelChecker: CancelChecker ->
       document.lspCancelChecker = lspCancelChecker
 

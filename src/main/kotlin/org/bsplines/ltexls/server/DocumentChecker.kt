@@ -214,6 +214,8 @@ class DocumentChecker(
       languageToolInterface.enableEasterEgg()
     }
 
+    annotatedTextFragment.document.raiseExceptionIfCanceled()
+
     logTextToBeChecked(annotatedTextFragment.annotatedText, settings)
 
     val beforeCheckingInstant: Instant = Instant.now()
@@ -222,9 +224,12 @@ class DocumentChecker(
         ArrayList(languageToolInterface.check(annotatedTextFragment))
       } catch (e: RuntimeException) {
         Tools.rethrowCancellationException(e)
+        annotatedTextFragment.document.raiseExceptionIfCanceled()
         Logging.LOGGER.severe(I18n.format("languageToolFailed", e))
         return emptyList()
       }
+
+    annotatedTextFragment.document.raiseExceptionIfCanceled()
 
     if (Logging.LOGGER.isLoggable(Level.FINER)) {
       Logging.LOGGER.finer(

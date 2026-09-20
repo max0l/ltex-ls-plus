@@ -13,8 +13,10 @@ import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -136,6 +138,24 @@ class LtexTextDocumentItemTest {
     )
     assertEquals("ac123456def", document.text)
     assertNull(document.caretPosition)
+  }
+
+  @Test
+  fun testRepeatedCancellationRequestsCancelOnlyCurrentCheck() {
+    val document =
+      LtexTextDocumentItem(
+        LtexLanguageServer(),
+        "untitled:test.md",
+        "markdown",
+        1,
+        "Text",
+      )
+
+    document.cancelCheck()
+    document.cancelCheck()
+
+    assertFailsWith<CancellationException> { document.raiseExceptionIfCanceled() }
+    document.raiseExceptionIfCanceled()
   }
 
   @Test

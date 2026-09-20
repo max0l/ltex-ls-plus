@@ -46,13 +46,20 @@ class LtexTextDocumentItem(
   var lastCaretChangeInstant: Instant = Instant.now()
   var diagnosticsCache: List<Diagnostic>? = null
     private set
+
+  @Volatile
   var beingChecked: Boolean = false
     private set
   var lspCancelChecker: CancelChecker? = null
 
   private val lineStartPosList: MutableList<Int> = ArrayList()
   private var checkingResult: Pair<List<LanguageToolRuleMatch>, List<AnnotatedTextFragment>>? = null
-  private var cancellationCounter = 0
+
+  @Volatile
+  private var cancellationRequested = false
+
+  @Volatile
+  private var latestReceivedVersion: Int = version
 
   init {
     reinitializeLineStartPosList(text)
@@ -176,9 +183,16 @@ class LtexTextDocumentItem(
     reinitializeLineStartPosList(text)
     this.checkingResult = null
     this.diagnosticsCache = null
+
     this.caretPosition = guessCaretPositionInFullUpdate(oldText)
     if (this.caretPosition != null) this.lastCaretChangeInstant = Instant.now()
   }
+
+  fun noteReceivedVersion(version: Int) {
+    this.latestReceivedVersion = version
+  }
+
+  fun isLatestReceivedVersion(version: Int): Boolean = this.latestReceivedVersion == version
 
   fun applyTextChangeEvents(textChangeEvents: List<TextDocumentContentChangeEvent>) {
     val oldLastCaretChangeInstant: Instant = this.lastCaretChangeInstant
@@ -458,18 +472,18 @@ class LtexTextDocumentItem(
     if ((lspCancelChecker != null) && lspCancelChecker.isCanceled) {
       this.lspCancelChecker = null
       Logging.LOGGER.fine(I18n.format("cancelingCheckDueToLspCancelNotification"))
-    } else if (this.cancellationCounter > 0) {
-      this.cancellationCounter--
+    } else if (this.cancellationRequested) {
       Logging.LOGGER.fine(I18n.format("cancelingCheckDueToIncomingCheckRequest"))
     } else {
       return
     }
 
+    this.cancellationRequested = false
     this.beingChecked = false
     throw CancellationException()
   }
 
   fun cancelCheck() {
-    this.cancellationCounter++
+    this.cancellationRequested = true
   }
 }

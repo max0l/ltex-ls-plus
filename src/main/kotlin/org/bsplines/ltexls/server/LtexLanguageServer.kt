@@ -36,6 +36,7 @@ import org.eclipse.lsp4j.services.WorkspaceService
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -46,7 +47,12 @@ class LtexLanguageServer :
   LanguageServer,
   LanguageClientAware {
   var languageClient: LtexLanguageClient? = null
-  val singleThreadExecutorService: ExecutorService = Executors.newSingleThreadScheduledExecutor()
+  private val prioritizedExecutor = PrioritizedSingleThreadExecutor()
+  val singleThreadExecutorService: ExecutorService = this.prioritizedExecutor
+  val interactiveExecutor =
+    Executor { command ->
+      this.prioritizedExecutor.executeInteractive(command)
+    }
   val settingsManager = SettingsManager()
 
   // Shared across all documents; swept periodically and cleared per-document on

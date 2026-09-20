@@ -120,9 +120,9 @@ class LtexTextDocumentService(
 
     val uri: String = params.textDocument.uri
     val document: LtexTextDocumentItem = getDocument(uri) ?: return
-    if (document.beingChecked) document.cancelCheck()
+    cancelActiveChecks()
 
-    this.languageServer.singleThreadExecutorService.execute {
+    this.languageServer.interactiveExecutor.execute {
       var exception: Exception? = null
 
       try {
@@ -144,15 +144,20 @@ class LtexTextDocumentService(
   override fun didChange(params: DidChangeTextDocumentParams) {
     val uri: String = params.textDocument.uri
     val document: LtexTextDocumentItem = getDocument(uri) ?: return
-    if (document.beingChecked) document.cancelCheck()
+    val documentVersion: Int = params.textDocument.version
+    document.noteReceivedVersion(documentVersion)
+    cancelActiveChecks()
 
-    this.languageServer.singleThreadExecutorService.execute {
+    this.languageServer.interactiveExecutor.execute {
       document.applyTextChangeEvents(params.contentChanges)
-      document.version = params.textDocument.version
+      document.version = documentVersion
 
-      if (
-        this.languageServer.settingsManager.settings.checkFrequency == Settings.CheckFrequency.Edit
-      ) {
+      val checkFrequency: Settings.CheckFrequency =
+        this.languageServer.settingsManager.settings.checkFrequency
+      val shouldCheck: Boolean =
+        checkFrequency == Settings.CheckFrequency.Edit &&
+          document.isLatestReceivedVersion(documentVersion)
+      if (shouldCheck) {
         var exception: Exception? = null
 
         try {
@@ -186,8 +191,10 @@ class LtexTextDocumentService(
         return CompletableFuture.completedFuture(emptyList())
       }
 
+    cancelActiveChecks()
+
     return CompletableFutures.computeAsync(
-      this.languageServer.singleThreadExecutorService,
+      this.languageServer.interactiveExecutor,
     ) { lspCancelChecker: CancelChecker ->
       document.lspCancelChecker = lspCancelChecker
 
@@ -215,6 +222,12 @@ class LtexTextDocumentService(
       Logging.LOGGER.warning(I18n.format("couldNotFindDocumentWithUri", uri))
       null
     }
+
+  fun cancelActiveChecks() {
+    this.documents.values.forEach { document ->
+      if (document.beingChecked) document.cancelCheck()
+    }
+  }
 
   fun executeFunctionForEachDocument(function: (LtexTextDocumentItem) -> Unit) {
     this.documents.values.forEach(function)
